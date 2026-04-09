@@ -129,10 +129,13 @@ export default function ExamDetailScreen() {
   const [isCreatingTest, setIsCreatingTest] = useState(false);
 
   // ---- Fetch all data ----
-  const fetchData = useCallback(async () => {
+  // isPolling=true 일 때는 loadState를 'loading'으로 리셋하지 않는다 (백그라운드 갱신)
+  const fetchData = useCallback(async (isPolling = false) => {
     if (!id || !user) return;
 
-    setLoadState('loading');
+    if (!isPolling) {
+      setLoadState('loading');
+    }
     setErrorMsg(null);
 
     try {
@@ -278,7 +281,7 @@ export default function ExamDetailScreen() {
     if (!isAnalyzing) return;
 
     const interval = setInterval(() => {
-      fetchData();
+      fetchData(true);
     }, 5000);
 
     return () => clearInterval(interval);
@@ -311,7 +314,7 @@ export default function ExamDetailScreen() {
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{errorMsg ?? '오류가 발생했습니다.'}</Text>
           </View>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchData}>
+          <TouchableOpacity style={styles.retryButton} onPress={() => fetchData()}>
             <Text style={styles.retryButtonText}>다시 시도</Text>
           </TouchableOpacity>
         </View>
@@ -338,7 +341,7 @@ export default function ExamDetailScreen() {
           <Text style={styles.analyzingSubtext}>
             시험지를 분석하고 있습니다. 잠시만 기다려 주세요.
           </Text>
-          <TouchableOpacity style={styles.refreshButton} onPress={fetchData}>
+          <TouchableOpacity style={styles.refreshButton} onPress={() => fetchData()}>
             <Text style={styles.refreshButtonText}>새로고침</Text>
           </TouchableOpacity>
         </View>

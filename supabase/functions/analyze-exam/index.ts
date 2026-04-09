@@ -16,7 +16,7 @@
  * Environment: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY
  */
 
-import OpenAI from "npm:openai";
+import OpenAI from "npm:openai@4";
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { corsHeaders } from "../_shared/cors.ts";
 import { supabaseAdmin } from "../_shared/supabaseAdmin.ts";
@@ -343,15 +343,15 @@ function generateBlueprintData(classifications: ClassificationResult[]) {
 // ---------------------------------------------------------------------------
 
 function buildExplanationSystem(subject: string): string {
-// 과목별 진단 가이드
-const subjectGuidance: Record<string, string> = {
-  math: "",
-  korean: "\n국어 과목은 지문 이해도, 문법 규칙 적용, 어휘력, 작품 해석력을 중점적으로 진단하세요.",
-  english: "\n영어 과목은 문법 구조, 어휘 수준, 독해 전략, 시간 관리를 중점적으로 진단하세요.",
-};
-const extra = subjectGuidance[subject] ?? "";
+  // 과목별 진단 가이드
+  const subjectGuidance: Record<string, string> = {
+    math: "",
+    korean: "\n국어 과목은 지문 이해도, 문법 규칙 적용, 어휘력, 작품 해석력을 중점적으로 진단하세요.",
+    english: "\n영어 과목은 문법 구조, 어휘 수준, 독해 전략, 시간 관리를 중점적으로 진단하세요.",
+  };
+  const extra = subjectGuidance[subject] ?? "";
 
-return [
+  return [
   "당신은 한국 수학/국어/영어 시험 전문 선생님입니다.",
   "학생의 오답을 분석하고, 단계별 풀이와 교정 안내를 제공합니다.",
   "",
@@ -913,6 +913,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!canTransition(currentStatus, "analyzed")) {
+      await supabaseAdmin.from("exams").update({ status: "error" }).eq("id", examId);
       return errorResponse(
         `Cannot transition exam status from '${currentStatus}' to 'analyzed'`,
         400,
@@ -921,6 +922,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (isExpired(exam.expires_at)) {
+      await supabaseAdmin.from("exams").update({ status: "error" }).eq("id", examId);
       return errorResponse("Exam has expired", 410, "EXPIRED");
     }
 
@@ -932,6 +934,7 @@ Deno.serve(async (req: Request) => {
       .order("number", { ascending: true });
 
     if (qErr || !allQuestions) {
+      await supabaseAdmin.from("exams").update({ status: "error" }).eq("id", examId);
       return errorResponse("Failed to load questions", 500, "DB_ERROR");
     }
 
@@ -985,12 +988,14 @@ Deno.serve(async (req: Request) => {
       .single<CreditRow>();
 
     if (creditErr || !credit) {
+      await supabaseAdmin.from("exams").update({ status: "error" }).eq("id", examId);
       return errorResponse("Credit record not found", 404, "NOT_FOUND");
     }
 
     const remaining = credit.total - credit.used;
     const chargeableWrongCount = Math.max(0, wrongCount - cacheHits);
     if (remaining < chargeableWrongCount) {
+      await supabaseAdmin.from("exams").update({ status: "error" }).eq("id", examId);
       return errorResponse(
         `Insufficient credits: need ${chargeableWrongCount}, have ${remaining}`,
         402,
@@ -1429,6 +1434,15 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error: unknown) {
     console.error("[analyze-exam] Unhandled error:", error);
+
+    // examId가 스코프에 있으면 exam status를 error로 설정
+    try {
+      const body = await req.clone().json().catch(() => null);
+      const eid = (body as Record<string, unknown> | null)?.examId;
+      if (typeof eid === "string") {
+        await supabaseAdmin.from("exams").update({ status: "error" }).eq("id", eid);
+      }
+    } catch { /* 최선 시도 — 실패해도 응답은 반환 */ }
 
     const message =
       error instanceof Error ? error.message : "Internal server error";
