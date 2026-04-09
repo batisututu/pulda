@@ -31,8 +31,16 @@ interface GenerateVariantsResponse {
 async function invokeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
   console.log(`[EdgeFn] Invoking "${name}"`, body);
 
+  // 세션 토큰을 명시적으로 첨부 — 웹에서 SDK 자동 첨부가 실패할 수 있음
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = {};
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
+  }
+
   const { data, error, response } = await supabase.functions.invoke(name, {
     body,
+    headers,
   }) as { data: T | null; error: Error | null; response?: Response };
 
   if (error) {
