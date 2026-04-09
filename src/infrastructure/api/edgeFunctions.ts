@@ -29,45 +29,65 @@ interface GenerateVariantsResponse {
 }
 
 async function invokeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  console.log(`[EdgeFn] Invoking "${name}"`, body);
-
   // 세션 토큰을 명시적으로 첨부 — 웹에서 SDK 자동 첨부가 실패할 수 있음
   const { data: { session } } = await supabase.auth.getSession();
-  const headers: Record<string, string> = {};
+  const authHeaders: Record<string, string> = {};
   if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
+    authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+    console.log(`[EdgeFn] Invoking "${name}" (auth: token present, expires: ${new Date((session.expires_at ?? 0) * 1000).toISOString()})`);
+  } else {
+    console.warn(`[EdgeFn] Invoking "${name}" WITHOUT auth token!`);
   }
 
-  const { data, error, response } = await supabase.functions.invoke(name, {
+  const result = await supabase.functions.invoke(name, {
     body,
-    headers,
-  }) as { data: T | null; error: Error | null; response?: Response };
+    headers: authHeaders,
+  });
 
-  if (error) {
-    // Supabase SDK는 non-2xx 응답 시 data=null 반환 — Response 본문에서 에러 상세 추출
+  // 전체 결과 구조 디버깅
+  console.log(`[EdgeFn] "${name}" raw result:`, {
+    hasData: result.data != null,
+    dataType: typeof result.data,
+    hasError: result.error != null,
+    errorName: result.error?.name,
+    errorMessage: result.error?.message,
+    hasContext: !!(result.error as unknown as Record<string, unknown>)?.context,
+  });
+
+  if (result.error) {
     let code = 'UNKNOWN';
-    let msg = error.message ?? `Edge Function "${name}" failed`;
+    let msg = result.error.message ?? `Edge Function "${name}" failed`;
 
-    // error.context (FunctionsHttpError) 또는 response에서 JSON 본문 읽기
-    const res = (error as Error & { context?: Response }).context ?? response;
-    if (res && !res.bodyUsed) {
-      try {
-        const errorBody = await res.json() as Record<string, unknown>;
-        if (errorBody.error) msg = String(errorBody.error);
-        if (errorBody.code) code = String(errorBody.code);
-      } catch {
-        // JSON 파싱 실패 — 기본 에러 메시지 사용
+    // FunctionsHttpError.context는 Response 객체
+    const ctx = (result.error as unknown as { context?: Response }).context;
+    if (ctx) {
+      console.log(`[EdgeFn] "${name}" error context:`, {
+        status: ctx.status,
+        statusText: ctx.statusText,
+        bodyUsed: ctx.bodyUsed,
+        type: ctx.type,
+      });
+
+      if (!ctx.bodyUsed) {
+        try {
+          const errorBody = await ctx.json();
+          console.log(`[EdgeFn] "${name}" error body:`, errorBody);
+          if (errorBody.error) msg = String(errorBody.error);
+          if (errorBody.code) code = String(errorBody.code);
+        } catch (parseErr) {
+          console.warn(`[EdgeFn] "${name}" body parse failed:`, parseErr);
+        }
       }
     }
 
-    console.error(`[EdgeFn] "${name}" failed:`, { code, msg, status: res?.status });
+    console.error(`[EdgeFn] "${name}" FAILED:`, { code, msg });
     const err = new Error(msg) as Error & { code?: string };
     err.code = code;
     throw err;
   }
 
-  console.log(`[EdgeFn] "${name}" success`);
-  return data as T;
+  console.log(`[EdgeFn] "${name}" SUCCESS`);
+  return result.data as T;
 }
 
 /**
