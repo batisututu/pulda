@@ -13,10 +13,12 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
  * Returns null if the token is invalid or missing.
  */
 export async function getUserId(req: Request): Promise<string | null> {
+  // x-user-token 우선 — ES256 JWT가 게이트웨이를 우회하여 직접 전달됨
+  const userToken = req.headers.get('x-user-token');
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
-
-  const token = authHeader.replace('Bearer ', '');
+  const token = userToken
+    ?? (authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null);
+  if (!token) return null;
 
   // service_role 키로 클라이언트를 생성하여 어떤 유저의 JWT든 검증 가능
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {

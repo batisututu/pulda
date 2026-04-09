@@ -29,12 +29,14 @@ interface GenerateVariantsResponse {
 }
 
 async function invokeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  // 세션 토큰을 명시적으로 첨부 — 웹에서 SDK 자동 첨부가 실패할 수 있음
+  // ES256 유저 JWT는 Supabase Edge Function 게이트웨이에서 거부됨 (HS256만 수용)
+  // Authorization 헤더는 SDK가 anon key로 설정 → 게이트웨이 통과
+  // 유저 토큰은 x-user-token 커스텀 헤더로 전달 → auth.ts에서 읽음
   const { data: { session } } = await supabase.auth.getSession();
   const authHeaders: Record<string, string> = {};
   if (session?.access_token) {
-    authHeaders['Authorization'] = `Bearer ${session.access_token}`;
-    console.log(`[EdgeFn] Invoking "${name}" (auth: token present, expires: ${new Date((session.expires_at ?? 0) * 1000).toISOString()})`);
+    authHeaders['x-user-token'] = session.access_token;
+    console.log(`[EdgeFn] Invoking "${name}" (auth: x-user-token present)`);
   } else {
     console.warn(`[EdgeFn] Invoking "${name}" WITHOUT auth token!`);
   }
