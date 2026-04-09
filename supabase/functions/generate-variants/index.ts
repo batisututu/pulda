@@ -20,7 +20,7 @@ import { withTimeout } from "../_shared/timeout.ts";
 import { extractJson } from "../_shared/extractJson.ts";
 import { withRetry } from "../_shared/retry.ts";
 import {
-  VARIANT_SYSTEM,
+  buildVariantSystem,
   VariantRaw,
   parseVisualExplanation,
 } from "../_shared/variantTypes.ts";
@@ -289,6 +289,9 @@ Deno.serve(async (req: Request) => {
       .filter(Boolean)
       .join("\n");
 
+    // 과목/학년별 변형문항 프롬프트 생성
+    const variantSystem = buildVariantSystem(question.subject, grade);
+
     // 변형문항 생성 API 호출 — withRetry에 signal 전달하여 타임아웃 시 재시도 즉시 중단
     const response = await withTimeout(
       (signal) =>
@@ -297,7 +300,7 @@ Deno.serve(async (req: Request) => {
             anthropic.messages.create({
               model: ANTHROPIC_MODEL,
               max_tokens: 4096,
-              system: VARIANT_SYSTEM,
+              system: variantSystem,
               messages: [{ role: "user", content: userPrompt }],
               signal,
             }),

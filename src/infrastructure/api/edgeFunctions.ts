@@ -34,7 +34,13 @@ async function invokeFunction<T>(name: string, body: Record<string, unknown>): P
   });
 
   if (error) {
-    throw new Error(error.message ?? `Edge Function "${name}" failed`);
+    // Edge Function이 반환한 구조화된 에러 코드 보존
+    const structuredData = data as Record<string, unknown> | null;
+    const code = structuredData?.code as string | undefined;
+    const msg = (structuredData?.message as string) ?? error.message ?? `Edge Function "${name}" failed`;
+    const err = new Error(msg) as Error & { code?: string };
+    err.code = code ?? 'UNKNOWN';
+    throw err;
   }
 
   return data as T;

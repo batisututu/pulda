@@ -209,11 +209,11 @@ const useExamStore = create<ExamState>((set, get) => ({
       invokeRunOcr(result.examId)
         .then(() => invokeAnalyzeExam(result.examId))
         .catch((pipelineErr) => {
-          if (__DEV__) {
-            console.warn('[uploadExam] 파이프라인 오류:', pipelineErr instanceof Error ? pipelineErr.message : pipelineErr);
-          }
-          // 파이프라인 실패 시 exam status가 Edge Function에서 'error'로 설정됨
-          // exam/[id] 화면의 폴링이 이를 감지하여 사용자에게 에러 표시
+          // 파이프라인 에러를 스토어에 반영하여 UI에서 표시
+          const message = pipelineErr instanceof Error ? pipelineErr.message : '분석 파이프라인 오류';
+          set({ error: message });
+          // 시험지 목록 새로고침으로 error 상태 반영
+          get().fetchExams();
         });
 
       // 업로드된 시험지를 낙관적으로 목록 맨 앞에 추가한다.

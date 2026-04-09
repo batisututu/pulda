@@ -29,6 +29,7 @@ import { withRetry } from "../_shared/retry.ts";
 import { canTransition, isExpired } from "../_shared/statusTransitions.ts";
 import {
   VARIANT_SYSTEM,
+  buildVariantSystem,
   VariantRaw,
   parseVisualExplanation,
 } from "../_shared/variantTypes.ts";
@@ -120,21 +121,34 @@ interface ClassificationResult {
 // L2: Classification (GPT-4o-mini)
 // ---------------------------------------------------------------------------
 
-const CLASSIFY_SYSTEM = [
-  "당신은 한국 중고등학교 교육과정 분류 전문가입니다.",
-  "주어진 시험 문항들을 분석하여 교육과정 단원, 난이도, 문항 유형을 분류합니다.",
-  "",
-  "규칙:",
-  '1. subject: 과목 (math, korean, english 중 하나)',
-  '2. unit: 대단원명 (예: "이차함수", "확률과 통계", "도형의 성질")',
-  '3. sub_unit: 소단원명 (예: "꼭짓점과 축", "조건부확률")',
-  "4. difficulty: easy/medium/hard",
-  "5. question_type: multiple_choice/short_answer/essay",
-  "6. reasoning: 분류 근거를 한국어로 간결하게 설명",
-  "",
-  "입력된 모든 문항에 대해 각각 분류하여, results 배열로 응답하세요.",
-  "반드시 JSON만 출력하세요.",
-].join("\n");
+function buildClassifySystem(subject: string): string {
+  // 과목별 단원 예시
+  const unitExamples: Record<string, string> = {
+    math: '예: "이차함수", "확률과 통계", "도형의 성질", "수열", "미분과 적분"',
+    korean: '예: "독서(비문학)", "문학(현대시)", "문학(현대소설)", "문학(고전)", "화법과 작문", "언어와 매체"',
+    english: '예: "독해(주제/요지)", "독해(빈칸추론)", "독해(순서배열)", "독해(문장삽입)", "어법", "어휘"',
+  };
+  const unitExample = unitExamples[subject] ?? unitExamples.math;
+
+  return [
+    "당신은 한국 중고등학교 교육과정 분류 전문가입니다.",
+    "주어진 시험 문항들을 분석하여 교육과정 단원, 난이도, 문항 유형을 분류합니다.",
+    "",
+    "규칙:",
+    '1. subject: 과목 (math, korean, english 중 하나)',
+    `2. unit: 대단원명 (${unitExample})`,
+    '3. sub_unit: 소단원명',
+    "4. difficulty: easy/medium/hard",
+    "5. question_type: multiple_choice/short_answer/essay",
+    "6. reasoning: 분류 근거를 한국어로 간결하게 설명",
+    "",
+    "입력된 모든 문항에 대해 각각 분류하여, results 배열로 응답하세요.",
+    "반드시 JSON만 출력하세요.",
+  ].join("\n");
+}
+
+// 하위 호환성 — 기존 코드에서 상수로 참조하는 경우
+const CLASSIFY_SYSTEM = buildClassifySystem("math");
 
 const CLASSIFY_BATCH_SCHEMA = {
   type: "object" as const,
@@ -206,6 +220,9 @@ async function classifyBatch(
 
   lines.push("위 모든 문항을 각각 분류하여 results 배열로 응답하세요.");
 
+  // 과목별 분류 프롬프트 사용
+  const classifySystem = buildClassifySystem(questions[0]?.subject ?? "math");
+
   // 분류 API 호출 — 30초 타임아웃 + signal 전달
   const response = await withTimeout(
     (signal) =>
@@ -215,7 +232,7 @@ async function classifyBatch(
             model: OPENAI_MODEL,
             max_tokens: 4096,
             messages: [
-              { role: "system", content: CLASSIFY_SYSTEM },
+              { role: "system", content: classifySystem },
               { role: "user", content: lines.join("\n") },
             ],
             response_format: {
@@ -325,7 +342,16 @@ function generateBlueprintData(classifications: ClassificationResult[]) {
 // L3a: Explanation / Diagnosis (Anthropic Claude Sonnet)
 // ---------------------------------------------------------------------------
 
-const EXPLANATION_SYSTEM = [
+function buildExplanationSystem(subject: string): string {
+// 과목별 진단 가이드
+const subjectGuidance: Record<string, string> = {
+  math: "",
+  korean: "\n국어 과목은 지문 이해도, 문법 규칙 적용, 어휘력, 작품 해석력을 중점적으로 진단하세요.",
+  english: "\n영어 과목은 문법 구조, 어휘 수준, 독해 전략, 시간 관리를 중점적으로 진단하세요.",
+};
+const extra = subjectGuidance[subject] ?? "";
+
+return [
   "당신은 한국 수학/국어/영어 시험 전문 선생님입니다.",
   "학생의 오답을 분석하고, 단계별 풀이와 교정 안내를 제공합니다.",
   "",
@@ -337,16 +363,20 @@ const EXPLANATION_SYSTEM = [
   "5. error_reasoning: 오답 원인 (한국어)",
   "6. correction_guidance: 교정 안내 (한국어)",
   "7. specific_mistake: 학생이 구체적으로 어떤 실수를 했는지 명시하세요 (한국어)",
-  "",
-  "visual_explanation 도식을 반드시 포함하세요:",
-  "- concept_gap → flow 유형: { type: 'flow', data: { nodes: [{id, type, label, latex, status}], edges: [{from, to, label}], error_node_id, summary, concept_keywords, student_steps: null, correct_steps: null, diverge_index: null, lines: null, error_line_index: null } }",
-  "- calculation_error → comparison 유형: { type: 'comparison', data: { student_steps: [{label, latex, status, annotation}], correct_steps: [...], diverge_index, summary, concept_keywords, nodes: null, edges: null, error_node_id: null, lines: null, error_line_index: null } }",
-  "- time_pressure → formula 유형: { type: 'formula', data: { lines: [{latex, annotation, is_error}], error_line_index, summary, concept_keywords, nodes: null, edges: null, error_node_id: null, student_steps: null, correct_steps: null, diverge_index: null } }",
-  "- 다른 오답 유형은 가장 적합한 type을 선택하세요",
-  "- data 객체의 모든 필드를 포함하되, 사용하지 않는 필드는 null",
-  "",
-  "반드시 JSON만 응답하세요 (마크다운 코드펜스 허용).",
-].join("\n");
+    extra,
+    "",
+    "visual_explanation 도식을 반드시 포함하세요:",
+    "- concept_gap → flow 유형: { type: 'flow', data: { nodes: [{id, type, label, latex, status}], edges: [{from, to, label}], error_node_id, summary, concept_keywords, student_steps: null, correct_steps: null, diverge_index: null, lines: null, error_line_index: null } }",
+    "- calculation_error → comparison 유형: { type: 'comparison', data: { student_steps: [{label, latex, status, annotation}], correct_steps: [...], diverge_index, summary, concept_keywords, nodes: null, edges: null, error_node_id: null, lines: null, error_line_index: null } }",
+    "- time_pressure → formula 유형: { type: 'formula', data: { lines: [{latex, annotation, is_error}], error_line_index, summary, concept_keywords, nodes: null, edges: null, error_node_id: null, student_steps: null, correct_steps: null, diverge_index: null } }",
+    "- 국어/영어 과목은 flow 또는 comparison 중 가장 적합한 type을 선택하세요 (formula는 수학 전용)",
+    "- data 객체의 모든 필드를 포함하되, 사용하지 않는 필드는 null",
+    "",
+    "반드시 JSON만 응답하세요 (마크다운 코드펜스 허용).",
+  ].join("\n");
+}
+
+const EXPLANATION_SYSTEM = buildExplanationSystem("math");
 
 interface ExplanationResult {
   errorType: string;
@@ -390,6 +420,9 @@ async function diagnoseQuestion(
     "필드: error_type, confidence, correct_answer, step_by_step, error_reasoning, correction_guidance, specific_mistake, visual_explanation",
   );
 
+  // 과목별 진단 프롬프트 사용
+  const explanationSystem = buildExplanationSystem(question.subject);
+
   // 진단/설명 API 호출 — 45초 타임아웃 + signal 전달
   const response = await withTimeout(
     (signal) =>
@@ -398,7 +431,7 @@ async function diagnoseQuestion(
           anthropic.messages.create({
             model: ANTHROPIC_MODEL,
             max_tokens: 4096,
-            system: EXPLANATION_SYSTEM,
+            system: explanationSystem,
             messages: [{ role: "user", content: lines.join("\n") }],
             signal,
           }),
@@ -490,6 +523,9 @@ async function diagnoseQuestionGPT(
     additionalProperties: false,
   };
 
+  // 과목별 진단 프롬프트 사용 (GPT fallback)
+  const explanationSystem = buildExplanationSystem(question.subject);
+
   // GPT-4o 진단 호출 — 45초 타임아웃 + signal 전달
   const response = await withTimeout(
     (signal) =>
@@ -499,7 +535,7 @@ async function diagnoseQuestionGPT(
             model: OPENAI_MODEL_LARGE,
             max_tokens: 4096,
             messages: [
-              { role: "system", content: EXPLANATION_SYSTEM },
+              { role: "system", content: explanationSystem },
               { role: "user", content: lines.join("\n") },
             ],
             response_format: {
@@ -678,6 +714,9 @@ async function generateVariantsAI(
     `위 진단 결과를 바탕으로 약점 교정용 변형문항 ${count}개를 생성하세요.`,
   );
 
+  // 과목/학년별 변형문항 프롬프트 생성
+  const variantSystem = buildVariantSystem(question.subject, grade);
+
   // 변형문항 생성 API 호출 — 45초 타임아웃 + signal 전달
   const response = await withTimeout(
     (signal) =>
@@ -686,7 +725,7 @@ async function generateVariantsAI(
           anthropic.messages.create({
             model: ANTHROPIC_MODEL,
             max_tokens: 4096,
-            system: VARIANT_SYSTEM,
+            system: variantSystem,
             messages: [{ role: "user", content: lines.join("\n") }],
             signal,
           }),
