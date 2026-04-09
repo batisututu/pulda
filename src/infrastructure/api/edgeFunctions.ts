@@ -29,21 +29,36 @@ interface GenerateVariantsResponse {
 }
 
 async function invokeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(name, {
+  console.log(`[EdgeFn] Invoking "${name}"`, body);
+
+  const { data, error, response } = await supabase.functions.invoke(name, {
     body,
-  });
+  }) as { data: T | null; error: Error | null; response?: Response };
 
   if (error) {
-    // Edge Function이 반환한 구조화된 에러 코드 보존
-    // 서버 errorResponse()는 { error: string, code: string } 형태로 반환
-    const structuredData = data as Record<string, unknown> | null;
-    const code = structuredData?.code as string | undefined;
-    const msg = (structuredData?.error as string) ?? error.message ?? `Edge Function "${name}" failed`;
+    // Supabase SDK는 non-2xx 응답 시 data=null 반환 — Response 본문에서 에러 상세 추출
+    let code = 'UNKNOWN';
+    let msg = error.message ?? `Edge Function "${name}" failed`;
+
+    // error.context (FunctionsHttpError) 또는 response에서 JSON 본문 읽기
+    const res = (error as Error & { context?: Response }).context ?? response;
+    if (res && !res.bodyUsed) {
+      try {
+        const errorBody = await res.json() as Record<string, unknown>;
+        if (errorBody.error) msg = String(errorBody.error);
+        if (errorBody.code) code = String(errorBody.code);
+      } catch {
+        // JSON 파싱 실패 — 기본 에러 메시지 사용
+      }
+    }
+
+    console.error(`[EdgeFn] "${name}" failed:`, { code, msg, status: res?.status });
     const err = new Error(msg) as Error & { code?: string };
-    err.code = code ?? 'UNKNOWN';
+    err.code = code;
     throw err;
   }
 
+  console.log(`[EdgeFn] "${name}" success`);
   return data as T;
 }
 

@@ -206,11 +206,21 @@ const useExamStore = create<ExamState>((set, get) => ({
 
       // OCR → 분석 파이프라인 트리거 (비동기)
       // OCR 성공 시 자동으로 analyze-exam을 호출하여 전체 파이프라인을 연결한다.
+      console.log('[uploadExam] 파이프라인 시작:', result.examId);
       invokeRunOcr(result.examId)
-        .then(() => invokeAnalyzeExam(result.examId))
+        .then((ocrResult) => {
+          console.log('[uploadExam] OCR 완료:', ocrResult);
+          return invokeAnalyzeExam(result.examId);
+        })
+        .then((analyzeResult) => {
+          console.log('[uploadExam] 분석 완료:', analyzeResult);
+          // 파이프라인 성공 시에도 목록 갱신하여 status 반영
+          get().fetchExams();
+        })
         .catch((pipelineErr) => {
           // 파이프라인 에러를 스토어에 반영하여 UI에서 표시
           const message = pipelineErr instanceof Error ? pipelineErr.message : '분석 파이프라인 오류';
+          console.error('[uploadExam] 파이프라인 오류:', message, pipelineErr);
           set({ error: message });
           // 시험지 목록 새로고침으로 error 상태 반영
           get().fetchExams();
