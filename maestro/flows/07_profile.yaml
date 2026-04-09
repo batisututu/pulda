@@ -1,0 +1,68 @@
+# 프로필(마이페이지) 화면 테스트
+# 마이 탭에서 사용자 정보와 크레딧 섹션이 표시되는지 확인하고,
+# 메뉴 항목인 도움말로 이동하는지 검증한다
+appId: kr.pulda.app
+---
+# 앱 실행 (로그인 상태 유지 가정)
+- launchApp
+
+# 이미 로그인 되어 있지 않으면 로그인
+- runFlow:
+    when:
+      visible: "로그인"
+    commands:
+      - tapOn: "이메일"
+      - inputText: "test@pulda.kr"
+      - tapOn: "비밀번호"
+      - inputText: "Test1234!"
+      - tapOn: "로그인"
+      - extendedWaitUntil:
+          visible: "시험"
+          timeout: 10000
+
+# 마이 탭 탭
+- tapOn: "마이"
+
+# 화면 전환 애니메이션 대기
+- waitForAnimationToEnd
+
+# 마이페이지 타이틀 확인
+- assertVisible: "마이페이지"
+
+# 프로필 데이터 로딩 대기 (최대 8초)
+- extendedWaitUntil:
+    visible: "마이페이지"
+    timeout: 8000
+
+# 이메일 표시 확인 (로그인한 계정 이메일)
+- assertVisible: "test@pulda.kr"
+
+# 크레딧 섹션 확인 (데이터 있으면 "남은 크레딧", 없으면 "크레딧" 레이블)
+- runFlow:
+    when:
+      visible: "남은 크레딧"
+    commands:
+      - assertVisible: "남은 크레딧"
+
+# 메뉴 섹션 항목 확인
+- assertVisible: "내 시험 기록"
+- assertVisible: "알림"
+- assertVisible: "도움말"
+
+# 도움말 메뉴 탭 후 도움말 화면 이동
+- tapOn: "도움말"
+
+# 도움말 화면 전환 대기
+- extendedWaitUntil:
+    visible: "도움말"
+    timeout: 5000
+
+# 도움말 화면 타이틀 확인
+- assertVisible: "도움말"
+
+# 첫 번째 FAQ 항목 확인
+- assertVisible: "풀다는 어떤 앱인가요?"
+
+# 앱 버전 텍스트 확인 (스크롤 필요할 수 있음)
+- scroll
+- assertVisible: "풀다 v1.0.0"

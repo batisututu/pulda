@@ -1,0 +1,28 @@
+# 로그인 플로우 테스트
+# 이메일/비밀번호로 로그인하고 시험 탭이 표시되는지 검증한다
+appId: kr.pulda.app
+---
+# 앱 실행
+- launchApp
+
+# 로그인 화면 타이틀 확인
+- assertVisible: "로그인"
+
+# 이메일 필드 탭 후 테스트 계정 입력
+- tapOn: "이메일"
+- inputText: "test@pulda.kr"
+
+# 비밀번호 필드 탭 후 입력
+- tapOn: "비밀번호"
+- inputText: "Test1234!"
+
+# 로그인 버튼 탭
+- tapOn: "로그인"
+
+# 네트워크 응답 및 화면 전환 대기 (최대 10초)
+- extendedWaitUntil:
+    visible: "시험"
+    timeout: 10000
+
+# 탭 바에 시험 탭이 표시되면 로그인 성공
+- assertVisible: "시험"

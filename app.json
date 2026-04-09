@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "풀다",
+    "slug": "pulda",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "pulda",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4F46E5"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "kr.pulda.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#4F46E5",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "kr.pulda.app"
+    },
+    "extra": {
+      "repository": "http://gitlab.deephigh.ai:8929/deephigh/pulda/pulda.git",
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "시험지 촬영을 위해 카메라 접근이 필요합니다."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "시험지 이미지를 선택하기 위해 사진 접근이 필요합니다."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#4F46E5"
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+# 시험지 업로드 화면 테스트
+# 업로드 탭의 핵심 UI 요소가 정상적으로 표시되는지 검증한다
+# 카메라/갤러리는 실기기 권한이 필요하므로 UI 존재 여부만 확인한다
+appId: kr.pulda.app
+---
+# 앱 실행 (로그인 상태 유지 가정)
+- launchApp
+
+# 이미 로그인 되어 있지 않으면 로그인
+- runFlow:
+    when:
+      visible: "로그인"
+    commands:
+      - tapOn: "이메일"
+      - inputText: "test@pulda.kr"
+      - tapOn: "비밀번호"
+      - inputText: "Test1234!"
+      - tapOn: "로그인"
+      - extendedWaitUntil:
+          visible: "시험"
+          timeout: 10000
+
+# 업로드 탭 탭
+- tapOn: "업로드"
+
+# 화면 전환 애니메이션 대기
+- waitForAnimationToEnd
+
+# 업로드 화면 타이틀 확인
+- assertVisible: "시험지 업로드"
+
+# 과목 선택 영역 확인
+- assertVisible: "과목 선택"
+
+# 과목 버튼 4개 모두 표시 확인
+- assertVisible: "수학"
+- assertVisible: "국어"
+- assertVisible: "영어"
+- assertVisible: "기타"
+
+# 수학 과목 선택
+- tapOn: "수학"
+
+# 시험지 이미지 섹션 확인
+- assertVisible: "시험지 이미지"
+
+# 이미지 선택 안내 문구 확인
+- assertVisible: "시험지 사진을 촬영하거나"
+
+# 카메라 촬영 버튼 표시 확인
+- assertVisible: "카메라로 촬영"
+
+# 갤러리 선택 버튼 표시 확인
+- assertVisible: "갤러리에서 선택"
+
+# 업로드(분석 시작) 버튼 표시 확인 (과목만 선택했으므로 비활성 상태)
+- assertVisible: "분석 시작"

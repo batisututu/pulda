@@ -1,0 +1,61 @@
+{
+  "cli": {
+    "version": ">= 15.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "_comment_supabase": "EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must come from EAS secret env vars or .env.local — never hardcode real URLs here",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://dev-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "dev-anon-key",
+        "EXPO_PUBLIC_PORTONE_STORE_ID": "dev-portone-store-id",
+        "EXPO_PUBLIC_PORTONE_CHANNEL_KEY": "dev-portone-channel-key"
+      },
+      "channel": "development"
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "_comment_supabase": "Replace staging-project.supabase.co with real staging project URL from EAS secrets",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://staging-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "staging-anon-key",
+        "EXPO_PUBLIC_PORTONE_STORE_ID": "staging-portone-store-id",
+        "EXPO_PUBLIC_PORTONE_CHANNEL_KEY": "staging-portone-channel-key"
+      },
+      "channel": "preview"
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "_comment_supabase": "Replace prod-project.supabase.co with real production project URL from EAS secrets",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://prod-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "prod-anon-key",
+        "EXPO_PUBLIC_PORTONE_STORE_ID": "prod-portone-store-id",
+        "EXPO_PUBLIC_PORTONE_CHANNEL_KEY": "prod-portone-channel-key"
+      },
+      "channel": "production"
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "_comment_apple": "appleId: your Apple ID email (e.g. dev@example.com) — set via EAS secret or replace APPLE_ID_HERE",
+        "appleId": "APPLE_ID_HERE",
+        "_comment_asc": "ascAppId: numeric App Store Connect app ID — replace ASC_APP_ID_HERE",
+        "ascAppId": "ASC_APP_ID_HERE",
+        "_comment_team": "appleTeamId: 10-char Apple Developer Team ID — replace TEAM_ID_HERE",
+        "appleTeamId": "TEAM_ID_HERE"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-services.json",
+        "track": "internal"
+      }
+    }
+  }
+}

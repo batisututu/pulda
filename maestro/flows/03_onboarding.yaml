@@ -1,0 +1,49 @@
+# 온보딩 플로우 테스트
+# 회원가입 직후 온보딩 화면에서 닉네임과 학년을 설정하고 탭 화면으로 이동하는지 검증한다
+# 사전 조건: 온보딩 화면이 표시된 상태 (02_auth_signup.yaml 실행 이후 또는 닉네임 미설정 계정 로그인)
+appId: kr.pulda.app
+---
+# 앱 실행
+- launchApp
+
+# 로그인 화면에서 이미 온보딩이 필요한 테스트 계정으로 로그인
+- assertVisible: "로그인"
+- tapOn: "이메일"
+- inputText: "onboarding_test@pulda.kr"
+- tapOn: "비밀번호"
+- inputText: "Test1234!"
+- tapOn: "로그인"
+
+# 온보딩 화면 전환 대기
+- extendedWaitUntil:
+    visible: "프로필 설정"
+    timeout: 10000
+
+# 온보딩 화면 확인
+- assertVisible: "프로필 설정"
+- assertVisible: "시험의 신에 오신 것을 환영합니다!"
+
+# 닉네임 입력
+- tapOn: "닉네임"
+- inputText: "테스트학생"
+
+# 키보드 닫기
+- hideKeyboard
+
+# 학년 섹션 스크롤하여 고등학교 항목 확인
+- assertVisible: "고등학교"
+
+# 고1 학년 버튼 탭
+- tapOn: "고1"
+
+# 시작하기 버튼 탭
+- tapOn: "시작하기"
+
+# 탭 화면 전환 대기 (최대 10초)
+- extendedWaitUntil:
+    visible: "시험"
+    timeout: 10000
+
+# 메인 탭 화면 진입 확인
+- assertVisible: "시험"
+- assertVisible: "업로드"

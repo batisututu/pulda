@@ -1,0 +1,88 @@
+# 전체 사용자 여정 통합 테스트
+# 로그인 → 시험 목록 탐색 → 업로드 화면 확인 → 소셜 피드 → 프로필 확인
+# 순서대로 주요 화면을 통합적으로 검증한다
+appId: kr.pulda.app
+---
+# 앱 실행
+- launchApp
+
+# ── 1단계: 로그인 ──────────────────────────────────────────
+# 로그인 화면 확인
+- assertVisible: "로그인"
+
+# 테스트 계정으로 로그인
+- tapOn: "이메일"
+- inputText: "test@pulda.kr"
+- tapOn: "비밀번호"
+- inputText: "Test1234!"
+- tapOn: "로그인"
+
+# 탭 화면 진입 대기
+- extendedWaitUntil:
+    visible: "시험"
+    timeout: 10000
+
+# ── 2단계: 시험 목록 탐색 ────────────────────────────────────
+# 시험 탭 확인 (기본 탭이므로 이미 표시)
+- assertVisible: "내 시험"
+
+# 필터 탭 전체 표시 확인
+- assertVisible: "전체"
+- assertVisible: "분석중"
+- assertVisible: "완료"
+
+# 빈 상태 또는 목록 로딩 대기
+- extendedWaitUntil:
+    visible: "내 시험"
+    timeout: 8000
+
+# ── 3단계: 업로드 화면 확인 ──────────────────────────────────
+# 업로드 탭 탭
+- tapOn: "업로드"
+- waitForAnimationToEnd
+
+# 업로드 화면 핵심 요소 확인
+- assertVisible: "시험지 업로드"
+- assertVisible: "과목 선택"
+- assertVisible: "수학"
+- assertVisible: "카메라로 촬영"
+- assertVisible: "갤러리에서 선택"
+
+# ── 4단계: 소셜 피드 탐색 ────────────────────────────────────
+# 소셜 탭 탭
+- tapOn: "소셜"
+- waitForAnimationToEnd
+
+# 소셜 화면 확인
+- assertVisible: "소셜"
+
+# 피드 로딩 대기
+- extendedWaitUntil:
+    visible: "소셜"
+    timeout: 8000
+
+# 검색 모드 진입
+- tapOn:
+    accessibilityLabel: "검색 열기"
+- waitForAnimationToEnd
+- assertVisible: "친구 검색"
+
+# 검색 모드 닫기
+- tapOn:
+    accessibilityLabel: "검색 닫기"
+- waitForAnimationToEnd
+
+# ── 5단계: 프로필(마이페이지) 확인 ──────────────────────────
+# 마이 탭 탭
+- tapOn: "마이"
+- waitForAnimationToEnd
+
+# 마이페이지 핵심 요소 확인
+- assertVisible: "마이페이지"
+- assertVisible: "test@pulda.kr"
+- assertVisible: "도움말"
+- assertVisible: "로그아웃"
+
+# 여정 완료 — 시험 탭으로 복귀
+- tapOn: "시험"
+- assertVisible: "내 시험"

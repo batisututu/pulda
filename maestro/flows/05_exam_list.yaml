@@ -1,0 +1,58 @@
+# 시험 목록 탐색 테스트
+# 시험 탭에서 목록 또는 빈 상태가 표시되는지 검증하고,
+# 시험 카드가 존재하면 탭하여 상세 화면으로 이동하는지 검증한다
+appId: kr.pulda.app
+---
+# 앱 실행 (로그인 상태 유지 가정)
+- launchApp
+
+# 이미 로그인 되어 있지 않으면 로그인
+- runFlow:
+    when:
+      visible: "로그인"
+    commands:
+      - tapOn: "이메일"
+      - inputText: "test@pulda.kr"
+      - tapOn: "비밀번호"
+      - inputText: "Test1234!"
+      - tapOn: "로그인"
+      - extendedWaitUntil:
+          visible: "시험"
+          timeout: 10000
+
+# 시험 탭 탭 (이미 첫 번째 탭이지만 명시적으로 이동)
+- tapOn: "시험"
+
+# 화면 전환 애니메이션 대기
+- waitForAnimationToEnd
+
+# 시험 목록 화면 타이틀 확인
+- assertVisible: "내 시험"
+
+# 필터 탭 전체 확인
+- assertVisible: "전체"
+- assertVisible: "분석중"
+- assertVisible: "완료"
+- assertVisible: "실패"
+
+# 목록 로딩 대기 (최대 8초)
+- extendedWaitUntil:
+    notVisible: "분석중"
+    timeout: 1000
+
+# 빈 상태 또는 시험 목록이 표시되는지 확인
+# (두 케이스를 모두 허용: 시험이 없으면 빈 상태, 있으면 카드 표시)
+- runFlow:
+    when:
+      visible: "아직 업로드한 시험이 없습니다"
+    commands:
+      # 빈 상태 안내 문구 추가 확인
+      - assertVisible: "하단의 업로드 탭에서 시험지를 촬영해 보세요"
+
+# 필터 탭 전환 테스트 - 완료 탭 탭
+- tapOn: "완료"
+- waitForAnimationToEnd
+
+# 전체 탭으로 복귀
+- tapOn: "전체"
+- waitForAnimationToEnd

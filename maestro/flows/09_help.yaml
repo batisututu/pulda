@@ -1,0 +1,64 @@
+# 도움말(FAQ) 화면 테스트
+# 도움말 화면의 FAQ 아코디언 항목이 표시되는지 확인하고,
+# 첫 번째 항목을 탭하여 답변 내용이 펼쳐지는지 검증한다
+appId: kr.pulda.app
+---
+# 앱 실행 (로그인 상태 유지 가정)
+- launchApp
+
+# 이미 로그인 되어 있지 않으면 로그인
+- runFlow:
+    when:
+      visible: "로그인"
+    commands:
+      - tapOn: "이메일"
+      - inputText: "test@pulda.kr"
+      - tapOn: "비밀번호"
+      - inputText: "Test1234!"
+      - tapOn: "로그인"
+      - extendedWaitUntil:
+          visible: "시험"
+          timeout: 10000
+
+# 마이 탭으로 이동
+- tapOn: "마이"
+- waitForAnimationToEnd
+
+# 도움말 메뉴 탭
+- tapOn: "도움말"
+
+# 도움말 화면 전환 대기
+- extendedWaitUntil:
+    visible: "도움말"
+    timeout: 5000
+
+# 도움말 화면 헤더 확인
+- assertVisible: "도움말"
+
+# FAQ 항목 목록 확인 (접힌 상태)
+- assertVisible: "풀다는 어떤 앱인가요?"
+- assertVisible: "시험지를 어떻게 업로드하나요?"
+- assertVisible: "AI 분석은 어떻게 진행되나요?"
+
+# 첫 번째 FAQ 항목 탭 (아코디언 펼치기)
+- tapOn: "풀다는 어떤 앱인가요?"
+
+# 애니메이션 대기
+- waitForAnimationToEnd
+
+# 펼쳐진 답변 내용 확인
+- assertVisible: "풀다(StudyAI)는 AI 기반 시험 분석 앱입니다."
+
+# 두 번째 FAQ 항목 탭하여 첫 번째는 닫히고 두 번째가 열리는지 확인
+- tapOn: "시험지를 어떻게 업로드하나요?"
+- waitForAnimationToEnd
+
+# 두 번째 답변 내용 확인
+- assertVisible: "업로드"
+
+# 스크롤하여 앱 버전 텍스트 확인
+- scroll
+- assertVisible: "풀다 v1.0.0"
+
+# 뒤로가기
+- back

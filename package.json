@@ -1,0 +1,58 @@
+{
+  "name": "studyai-app",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "maestro test maestro/flows/",
+    "e2e:login": "maestro test maestro/flows/01_auth_login.yaml",
+    "e2e:record": "maestro record",
+    "build:dev": "eas build --profile development",
+    "build:preview": "eas build --profile preview",
+    "build:prod": "eas build --profile production",
+    "submit:ios": "eas submit --platform ios --profile production",
+    "submit:android": "eas submit --platform android --profile production",
+    "update": "eas update"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~55.0.7",
+    "@supabase/supabase-js": "^2.99.2",
+    "expo": "~55.0.7",
+    "expo-camera": "~55.0.10",
+    "expo-constants": "~55.0.8",
+    "expo-image-picker": "~55.0.13",
+    "expo-linking": "~55.0.7",
+    "expo-notifications": "~55.0.13",
+    "expo-router": "~55.0.6",
+    "expo-secure-store": "~55.0.9",
+    "expo-sqlite": "~55.0.11",
+    "expo-status-bar": "~55.0.4",
+    "nativewind": "^4.2.3",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-math-view": "^3.9.5",
+    "react-native-web": "^0.21.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "openai": "^6.32.0",
+    "@types/katex": "^0.16.8",
+    "@types/react": "~19.2.2",
+    "tailwindcss": "^3.3.2",
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.0",
+    "vitest-axe": "^0.1.0"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "http://gitlab.deephigh.ai:8929/deephigh/pulda/pulda.git"
+  }
+}

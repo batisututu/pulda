@@ -1,0 +1,11 @@
+export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+export const EXAM_EXPIRY_DAYS = 7;
+export const MAX_QUESTIONS_PER_EXAM = 50;
+export const CLASSIFICATION_BATCH_SIZE = 5;
+export const DEFAULT_VARIANT_COUNT = 3;
+export const MAX_FOLLOW_LIMIT = 200;
+export const LINK_CODE_LENGTH = 6;
+export const LINK_CODE_EXPIRY_MINUTES = 30;
+export const TIMER_WARNING_SECONDS = 60;
+export const TIMER_CRITICAL_SECONDS = 30;

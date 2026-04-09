@@ -1,0 +1,78 @@
+# 소셜 피드 및 검색 테스트
+# 소셜 탭에서 피드 또는 빈 상태가 표시되는지 확인하고,
+# 검색 모드로 전환하여 닉네임 검색 UI가 동작하는지 검증한다
+appId: kr.pulda.app
+---
+# 앱 실행 (로그인 상태 유지 가정)
+- launchApp
+
+# 이미 로그인 되어 있지 않으면 로그인
+- runFlow:
+    when:
+      visible: "로그인"
+    commands:
+      - tapOn: "이메일"
+      - inputText: "test@pulda.kr"
+      - tapOn: "비밀번호"
+      - inputText: "Test1234!"
+      - tapOn: "로그인"
+      - extendedWaitUntil:
+          visible: "시험"
+          timeout: 10000
+
+# 소셜 탭 탭
+- tapOn: "소셜"
+
+# 화면 전환 애니메이션 대기
+- waitForAnimationToEnd
+
+# 소셜 화면 타이틀 확인
+- assertVisible: "소셜"
+
+# 피드 로딩 대기 (최대 8초)
+- extendedWaitUntil:
+    visible: "소셜"
+    timeout: 8000
+
+# 빈 피드 상태 또는 피드 카드가 표시되는지 확인
+- runFlow:
+    when:
+      visible: "아직 피드가 없습니다"
+    commands:
+      - assertVisible: "친구를 팔로우해보세요!"
+
+# 검색 모드 진입 (accessibilityLabel "검색 열기" 버튼 탭)
+- tapOn:
+    accessibilityLabel: "검색 열기"
+
+# 화면 전환 애니메이션 대기
+- waitForAnimationToEnd
+
+# 검색 모드 타이틀로 변경 확인
+- assertVisible: "친구 검색"
+
+# 검색 입력창 확인
+- assertVisible: "닉네임 검색..."
+
+# 검색 입력창에 검색어 입력 (2자 이상이어야 검색 실행)
+- tapOn: "닉네임 검색..."
+- inputText: "테스트"
+
+# 검색 실행 대기 (디바운스 400ms + 네트워크)
+- extendedWaitUntil:
+    visible: "테스트"
+    timeout: 5000
+
+# 검색 결과 또는 빈 상태 확인
+- runFlow:
+    when:
+      visible: "검색 결과가 없습니다"
+    commands:
+      - assertVisible: "다른 닉네임으로 검색해보세요"
+
+# 검색 모드 닫기
+- tapOn:
+    accessibilityLabel: "검색 닫기"
+
+# 피드 화면으로 복귀 확인
+- assertVisible: "소셜"

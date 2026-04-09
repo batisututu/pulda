@@ -1,0 +1,25 @@
+# 테스트 및 문서
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+docs/
+maestro/
+
+# 개발 도구
+.claude/
+.vscode/
+.idea/
+
+# Supabase (Edge Functions는 별도 배포)
+supabase/functions/
+
+# 설정 파일
+.env*.local
+.env.local.example
+vitest.config.ts
+
+# Git
+.git/
+.gitignore

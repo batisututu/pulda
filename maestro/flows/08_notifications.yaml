@@ -1,0 +1,66 @@
+# 알림 화면 테스트
+# 마이페이지의 알림 메뉴를 통해 알림 화면으로 이동하고,
+# 알림 목록 또는 빈 상태가 표시되는지 검증한다
+appId: kr.pulda.app
+---
+# 앱 실행 (로그인 상태 유지 가정)
+- launchApp
+
+# 이미 로그인 되어 있지 않으면 로그인
+- runFlow:
+    when:
+      visible: "로그인"
+    commands:
+      - tapOn: "이메일"
+      - inputText: "test@pulda.kr"
+      - tapOn: "비밀번호"
+      - inputText: "Test1234!"
+      - tapOn: "로그인"
+      - extendedWaitUntil:
+          visible: "시험"
+          timeout: 10000
+
+# 마이 탭으로 이동
+- tapOn: "마이"
+- waitForAnimationToEnd
+
+# 마이페이지 타이틀 확인
+- assertVisible: "마이페이지"
+
+# 알림 메뉴 탭
+- tapOn: "알림"
+
+# 알림 화면 전환 대기
+- extendedWaitUntil:
+    visible: "알림"
+    timeout: 5000
+
+# 알림 화면 헤더 확인
+- assertVisible: "알림"
+
+# 알림 데이터 로딩 대기
+- extendedWaitUntil:
+    notVisible: "불러오는 중..."
+    timeout: 8000
+
+# 알림이 있는 경우와 없는 경우 분기 확인
+- runFlow:
+    when:
+      visible: "새로운 알림이 없습니다"
+    commands:
+      # 빈 상태 안내 문구 확인
+      - assertVisible: "새로운 소식이 생기면 여기에 알려드릴게요."
+
+# 알림이 존재하는 경우 "모두 읽음" 버튼 존재 여부 확인
+# (unreadCount > 0일 때만 표시되므로 조건부 검증)
+- runFlow:
+    when:
+      visible: "모두 읽음"
+    commands:
+      - assertVisible: "모두 읽음"
+
+# 뒤로가기로 마이페이지 복귀
+- back
+
+# 마이페이지 복귀 확인
+- assertVisible: "마이페이지"

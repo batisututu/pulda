@@ -1,0 +1,16 @@
+export { SupabaseUserRepository } from './SupabaseUserRepository';
+export { SupabaseExamRepository } from './SupabaseExamRepository';
+export { SupabaseQuestionRepository } from './SupabaseQuestionRepository';
+export { SupabaseCreditRepository } from './SupabaseCreditRepository';
+export { SupabaseBlueprintRepository } from './SupabaseBlueprintRepository';
+export { SupabaseCacheRepository } from './SupabaseCacheRepository';
+export { SupabaseDiagnosisRepository } from './SupabaseDiagnosisRepository';
+export { SupabaseVariantRepository } from './SupabaseVariantRepository';
+export { SupabaseMiniTestRepository } from './SupabaseMiniTestRepository';
+export { SupabaseMiniTestAnswerRepository } from './SupabaseMiniTestAnswerRepository';
+export { SupabaseNotificationRepository } from './SupabaseNotificationRepository';
+export { SupabaseSubscriptionRepository } from './SupabaseSubscriptionRepository';
+export { SupabaseFollowRepository } from './SupabaseFollowRepository';
+export { SupabaseSharedItemRepository } from './SupabaseSharedItemRepository';
+export { SupabaseParentLinkRepository } from './SupabaseParentLinkRepository';
+export { SupabaseFeedbackRepository } from './SupabaseFeedbackRepository';

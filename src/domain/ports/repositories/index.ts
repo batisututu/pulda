@@ -1,0 +1,16 @@
+export type { IExamRepository } from './IExamRepository';
+export type { IQuestionRepository } from './IQuestionRepository';
+export type { IBlueprintRepository } from './IBlueprintRepository';
+export type { IDiagnosisRepository } from './IDiagnosisRepository';
+export type { IVariantRepository } from './IVariantRepository';
+export type { IMiniTestRepository } from './IMiniTestRepository';
+export type { IMiniTestAnswerRepository } from './IMiniTestAnswerRepository';
+export type { IUserRepository } from './IUserRepository';
+export type { ICreditRepository } from './ICreditRepository';
+export type { ISubscriptionRepository } from './ISubscriptionRepository';
+export type { ICacheRepository } from './ICacheRepository';
+export type { IFeedbackRepository } from './IFeedbackRepository';
+export type { IParentLinkRepository } from './IParentLinkRepository';
+export type { IFollowRepository } from './IFollowRepository';
+export type { ISharedItemRepository } from './ISharedItemRepository';
+export type { INotificationRepository } from './INotificationRepository';
