@@ -939,7 +939,16 @@ Deno.serve(async (req: Request) => {
     }
 
     const questions = allQuestions as QuestionRow[];
-    const wrongQuestions = questions.filter((q) => q.is_correct !== true);
+
+    // 학생 답안 데이터 존재 여부 확인 — OCR 직후는 모든 is_correct가 null
+    const hasAnyGrading = questions.some(
+      (q) => q.is_correct === true || q.is_correct === false,
+    );
+    // 채점 데이터 없으면(모두 null) L3+L4 건너뛰 — L2 분류+블루프린트만 생성
+    // 채점 데이터 있으면 기존 로직 유지 (null=미답도 오답으로 처리)
+    const wrongQuestions = hasAnyGrading
+      ? questions.filter((q) => q.is_correct !== true)
+      : questions.filter((q) => q.is_correct === false);
     const wrongCount = wrongQuestions.length;
 
     // --- 5. Cache lookup (question_cache) ---
@@ -1012,6 +1021,14 @@ Deno.serve(async (req: Request) => {
 
     const grade = userRow?.grade ?? "high1";
 
+    // --- Pipeline timeout safety net ---
+    // Supabase Edge Function 실행 제한(60s free/540s pro) 전에 정리
+    const PIPELINE_TIMEOUT_MS = 50_000;
+    const pipelineController = new AbortController();
+    const pipelineTimer = setTimeout(() => pipelineController.abort(), PIPELINE_TIMEOUT_MS);
+
+    try {
+
     // --- 8. L2: Classification (parallel batches) ---
     // 캐시된 분류 결과가 있으면 AI 호출 생략
     const questionsToClassify: QuestionRow[] = [];
@@ -1043,6 +1060,9 @@ Deno.serve(async (req: Request) => {
 
     // 캐시된 결과와 신규 결과를 합침
     const allClassifications = [...cachedClassifications, ...newClassifications];
+
+    // 파이프라인 타임아웃 체크
+    if (pipelineController.signal.aborted) throw new Error("Pipeline timeout after classification");
 
     // --- 9. L2: Blueprint generation + save ---
     const blueprintData = generateBlueprintData(allClassifications);
@@ -1081,6 +1101,7 @@ Deno.serve(async (req: Request) => {
 
       if (bpErr || !newBp) {
         console.error("[analyze-exam] Blueprint insert error:", bpErr);
+        await supabaseAdmin.from("exams").update({ status: "error" }).eq("id", examId);
         return errorResponse("Failed to save blueprint", 500, "DB_ERROR");
       }
       blueprintId = newBp.id;
@@ -1119,6 +1140,9 @@ Deno.serve(async (req: Request) => {
     const questionsToDiagnose = wrongQuestions.filter(
       (q) => !alreadyDiagnosedIds.has(q.id),
     );
+
+    // 파이프라인 타임아웃 체크
+    if (pipelineController.signal.aborted) throw new Error("Pipeline timeout before diagnosis");
 
     // --- 12. L3: Diagnosis + Verification (parallel per wrong question) ---
     // 오답 진단 병렬 실행 — 캐시된 explanation은 재사용, 나머지는 AI 호출
@@ -1268,6 +1292,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // 파이프라인 타임아웃 체크
+    if (pipelineController.signal.aborted) throw new Error("Pipeline timeout before variant generation");
+
     // --- 13. L4: Variant generation (per diagnosis) ---
     const allVariantIds: string[] = [];
     // 변형문항 검증 대상 수집
@@ -1384,6 +1411,17 @@ Deno.serve(async (req: Request) => {
         }
       }
       await Promise.all(updatePromises);
+    }
+
+    } catch (pipelineErr) {
+      // 파이프라인 타임아웃 또는 예상치 못한 오류 — exam status를 error로 설정
+      clearTimeout(pipelineTimer);
+      await supabaseAdmin.from("exams").update({ status: "error" }).eq("id", examId);
+      const pipelineMsg = pipelineErr instanceof Error ? pipelineErr.message : "Pipeline failed";
+      console.error("[analyze-exam] Pipeline error:", pipelineMsg);
+      return errorResponse(pipelineMsg, 500, "PIPELINE_ERROR");
+    } finally {
+      clearTimeout(pipelineTimer);
     }
 
     // --- 15. Credit deduction ---

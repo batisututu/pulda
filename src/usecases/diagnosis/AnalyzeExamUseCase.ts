@@ -132,8 +132,16 @@ export class AnalyzeExamUseCase implements UseCase<AnalyzeExamInput, AnalyzeExam
 
     const allQuestions = await this.questionRepo.findByExamId(examId);
 
-    // --- 2. Filter wrong questions (includes unanswered: isCorrect === null) ---
-    const wrongQuestions = allQuestions.filter((q) => q.isCorrect !== true);
+    // --- 2. Filter wrong questions ---
+    // 학생 답안 데이터 존재 여부 확인 — OCR 직후는 모든 isCorrect가 null
+    const hasAnyGrading = allQuestions.some(
+      (q) => q.isCorrect === true || q.isCorrect === false,
+    );
+    // 채점 데이터 없으면(모두 null) L3+L4 건너뜀 — L2 분류+블루프린트만 생성
+    // 채점 데이터 있으면 기존 로직 유지 (null=미답도 오답으로 처리)
+    const wrongQuestions = hasAnyGrading
+      ? allQuestions.filter((q) => q.isCorrect !== true)
+      : allQuestions.filter((q) => q.isCorrect === false);
     const wrongCount = wrongQuestions.length;
 
     // --- 2b. Credit pre-check ---

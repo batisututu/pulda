@@ -276,16 +276,25 @@ export default function ExamDetailScreen() {
   const isAnalyzing = exam?.status === 'processing' || exam?.status === 'ocr_done' || exam?.status === 'verified';
   const isAnalyzed = exam?.status === 'analyzed' || exam?.status === 'completed';
 
-  // 분석 중일 때 5초 간격 자동 폴링
+  // 분석 중일 때 5초 간격 자동 폴링 (최대 10분)
+  const [pollStartTime] = useState(() => Date.now());
+  const MAX_POLL_MS = 10 * 60 * 1000;
+
   useEffect(() => {
     if (!isAnalyzing) return;
 
     const interval = setInterval(() => {
+      if (Date.now() - pollStartTime > MAX_POLL_MS) {
+        clearInterval(interval);
+        setLoadState('error');
+        setErrorMsg('분석이 너무 오래 걸리고 있습니다. 나중에 다시 시도해 주세요.');
+        return;
+      }
       fetchData(true);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAnalyzing, fetchData]);
+  }, [isAnalyzing, fetchData, pollStartTime]);
 
   // ---- Render ----
 
